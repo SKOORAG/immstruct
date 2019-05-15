@@ -487,7 +487,7 @@ Structure.prototype.reference = function reference (path) {
  */
 Structure.prototype.forceHasSwapped = function (newData, oldData, keyPath) {
   this.emit('swap', newData || this.current, oldData, keyPath);
-  possiblyEmitAnimationFrameEvent(this, newData || this.current, oldData, keyPath);
+  //possiblyEmitAnimationFrameEvent(this, newData || this.current, oldData, keyPath);
 };
 
 
@@ -597,10 +597,10 @@ function possiblyEmitAnimationFrameEvent (emitter, newStructure, oldData, keyPat
   if (emitter._queuedChange) return void 0;
   emitter._queuedChange = true;
 
-  _requestAnimationFrame(function () {
-    emitter._queuedChange = false;
-    emitter.emit('next-animation-frame', newStructure, oldData, keyPath);
-  });
+  // _requestAnimationFrame(function () {
+  emitter._queuedChange = false;
+  emitter.emit('next-animation-frame', newStructure, oldData, keyPath);
+  // });
 }
 
 // Emit swap event on values are swapped
@@ -611,7 +611,7 @@ function handleSwap (emitter, fn) {
     if(newData === previous) return newStructure;
 
     emitter.emit('swap', newStructure, previous, keyPath);
-    possiblyEmitAnimationFrameEvent(emitter, newStructure, previous, keyPath);
+    //possiblyEmitAnimationFrameEvent(emitter, newStructure, previous, keyPath);
 
     return newStructure;
   };
