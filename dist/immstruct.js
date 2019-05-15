@@ -2,7 +2,7 @@
 * immstruct v2.0.0
 * A part of the Omniscient.js project
 ***************************************/
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.immstruct = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.immstruct = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(_dereq_,module,exports){
 'use strict';
 var Structure = _dereq_('./src/structure');
 
@@ -17,7 +17,7 @@ var Structure = _dereq_('./src/structure');
  * var structure = immstruct.get({ data: });
  * ```
  *
- * @property {Array} instances Array of `Structure` instances.
+ * @property {Array.<Structure>} instances Array of `Structure` instances.
  *
  * @class {Immstruct}
  * @constructor
@@ -43,7 +43,7 @@ function Immstruct () {
  * var immstruct = require('immstruct');
  * var structure = immstruct.get('myStruct', { foo: 'Hello' });
  * ```
- * @param {String} [key] - defaults to random string
+ * @param {string} [key] - defaults to random string
  * @param {Object|Immutable} [data] - defaults to empty data
  *
  * @returns {Structure}
@@ -61,10 +61,10 @@ Immstruct.prototype.get = function (key, data) {
  *
  * Get list of all instances created.
  *
- * @param {String} [name] - Name of the instance to get. If undefined get all instances
+ * @param {string} [name] - Name of the instance to get. If undefined get all instances
  *
- * @returns {Array}
- * @module immstruct.getInstances
+ * @returns {(Structure|Object.<String, Structure>)}
+ * @module immstruct.instance
  * @api public
  */
 Immstruct.prototype.instance = function (name) {
@@ -98,11 +98,11 @@ Immstruct.prototype.clear = function () {
  * immstruct('myKey', { foo: 'hello' });
  * immstruct.remove('myKey');
  * ```
- * @param {String} key
+ * @param {string} key
  *
  * @module immstruct.remove
  * @api public
- * @returns {Boolean}
+ * @returns {boolean}
  */
 Immstruct.prototype.remove = function (key) {
   return delete this._instances[key];
@@ -130,8 +130,8 @@ Immstruct.prototype.remove = function (key) {
  * var structure = immstruct.withHistory({ foo: 'Hello' });
  * ```
  *
- * @param {String} [key] - defaults to random string
- * @param {Number} [limit] - defaults to Infinity
+ * @param {string} [key] - defaults to random string
+ * @param {number} [limit] - defaults to Infinity
  * @param {Object|Immutable} [data] - defaults to empty data
  *
  * @module immstruct.withHistory
@@ -169,7 +169,7 @@ var inst = new Immstruct();
  * // ...
  * ```
  *
- * @param {String} [key] - defaults to random string
+ * @param {string} [key] - defaults to random string
  * @param {Object|Immutable} [data] - defaults to empty data
  *
  * @api public
@@ -227,25 +227,129 @@ function getInstance (obj, options) {
   return newInstance;
 }
 
-},{"./src/structure":4}],2:[function(_dereq_,module,exports){
+},{"./src/structure":10}],2:[function(_dereq_,module,exports){
 'use strict';
 
-//
-// We store our EE objects in a plain object whose properties are event names.
-// If `Object.create(null)` is not supported we prefix the event names with a
-// `~` to make sure that the built-in object properties are not overridden or
-// used as an attack vector.
-// We also assume that `Object.create(null)` is available when the event name
-// is an ES6 Symbol.
-//
-var prefix = typeof Object.create !== 'function' ? '~' : false;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _plugins = _dereq_('./plugins');
+
+exports.default = function (data) {
+  var createStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : _plugins.inMemory;
+
+  var watchers = [];
+
+  var transition = function transition() {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return watchers.forEach(function (watcher) {
+      return watcher.apply(undefined, args);
+    });
+  };
+
+  return _extends({}, createStore(data, transition), {
+    watch: function watch(fn) {
+      watchers.push(fn);
+    }
+  });
+};
+},{"./plugins":3}],3:[function(_dereq_,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+var inMemory = exports.inMemory = function inMemory(initial, transition) {
+  var rootState = initial;
+  var read = function read() {
+    return rootState;
+  };
+  var write = function write(fn) {
+    for (var _len = arguments.length, context = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      context[_key - 1] = arguments[_key];
+    }
+
+    var oldState = read();
+    var newState = fn(oldState);
+    transition.apply(undefined, [newState, oldState].concat(_toConsumableArray(context)));
+    rootState = newState;
+    return read();
+  };
+  return { read: read, write: write };
+};
+
+var webStorage = exports.webStorage = function webStorage(_ref, initial, transition) {
+  var type = _ref.type,
+      key = _ref.key;
+
+  var store = window[type + "Storage"];
+  if (initial !== undefined) {
+    store.setItem(key, JSON.stringify(initial));
+  }
+  var read = function read() {
+    return JSON.parse(store.getItem(key));
+  };
+  var write = function write(fn) {
+    for (var _len2 = arguments.length, context = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+      context[_key2 - 1] = arguments[_key2];
+    }
+
+    var oldState = read();
+    var newState = fn(oldState);
+    transition.apply(undefined, [newState, oldState].concat(_toConsumableArray(context)));
+    store.setItem(key, JSON.stringify(newState));
+    return read();
+  };
+  return { read: read, write: write };
+};
+},{}],4:[function(_dereq_,module,exports){
+'use strict';
+
+var has = Object.prototype.hasOwnProperty
+  , prefix = '~';
 
 /**
- * Representation of a single EventEmitter function.
+ * Constructor to create a storage for our `EE` objects.
+ * An `Events` instance is a plain object whose properties are event names.
  *
- * @param {Function} fn Event handler to be called.
- * @param {Mixed} context Context for function execution.
- * @param {Boolean} once Only emit once
+ * @constructor
+ * @api private
+ */
+function Events() {}
+
+//
+// We try to not inherit from `Object.prototype`. In some engines creating an
+// instance in this way is faster than calling `Object.create(null)` directly.
+// If `Object.create(null)` is not supported we prefix the event names with a
+// character to make sure that the built-in object properties are not
+// overridden or used as an attack vector.
+//
+if (Object.create) {
+  Events.prototype = Object.create(null);
+
+  //
+  // This hack is needed because the `__proto__` property is still inherited in
+  // some old browsers like Android 4, iPhone 5.1, Opera 11 and Safari 5.
+  //
+  if (!new Events().__proto__) prefix = false;
+}
+
+/**
+ * Representation of a single event listener.
+ *
+ * @param {Function} fn The listener function.
+ * @param {Mixed} context The context to invoke the listener with.
+ * @param {Boolean} [once=false] Specify if the listener is a one-time listener.
+ * @constructor
  * @api private
  */
 function EE(fn, context, once) {
@@ -255,33 +359,53 @@ function EE(fn, context, once) {
 }
 
 /**
- * Minimal EventEmitter interface that is molded against the Node.js
- * EventEmitter interface.
+ * Minimal `EventEmitter` interface that is molded against the Node.js
+ * `EventEmitter` interface.
  *
  * @constructor
  * @api public
  */
-function EventEmitter() { /* Nothing to set */ }
+function EventEmitter() {
+  this._events = new Events();
+  this._eventsCount = 0;
+}
 
 /**
- * Holds the assigned EventEmitters by name.
+ * Return an array listing the events for which the emitter has registered
+ * listeners.
  *
- * @type {Object}
- * @private
+ * @returns {Array}
+ * @api public
  */
-EventEmitter.prototype._events = undefined;
+EventEmitter.prototype.eventNames = function eventNames() {
+  var names = []
+    , events
+    , name;
+
+  if (this._eventsCount === 0) return names;
+
+  for (name in (events = this._events)) {
+    if (has.call(events, name)) names.push(prefix ? name.slice(1) : name);
+  }
+
+  if (Object.getOwnPropertySymbols) {
+    return names.concat(Object.getOwnPropertySymbols(events));
+  }
+
+  return names;
+};
 
 /**
- * Return a list of assigned event listeners.
+ * Return the listeners registered for a given event.
  *
- * @param {String} event The events that should be listed.
- * @param {Boolean} exists We only need to know if there are listeners.
+ * @param {String|Symbol} event The event name.
+ * @param {Boolean} exists Only check if there are listeners.
  * @returns {Array|Boolean}
  * @api public
  */
 EventEmitter.prototype.listeners = function listeners(event, exists) {
   var evt = prefix ? prefix + event : event
-    , available = this._events && this._events[evt];
+    , available = this._events[evt];
 
   if (exists) return !!available;
   if (!available) return [];
@@ -295,23 +419,23 @@ EventEmitter.prototype.listeners = function listeners(event, exists) {
 };
 
 /**
- * Emit an event to all registered event listeners.
+ * Calls each of the listeners registered for a given event.
  *
- * @param {String} event The name of the event.
- * @returns {Boolean} Indication if we've emitted an event.
+ * @param {String|Symbol} event The event name.
+ * @returns {Boolean} `true` if the event had listeners, else `false`.
  * @api public
  */
 EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
   var evt = prefix ? prefix + event : event;
 
-  if (!this._events || !this._events[evt]) return false;
+  if (!this._events[evt]) return false;
 
   var listeners = this._events[evt]
     , len = arguments.length
     , args
     , i;
 
-  if ('function' === typeof listeners.fn) {
+  if (listeners.fn) {
     if (listeners.once) this.removeListener(event, listeners.fn, undefined, true);
 
     switch (len) {
@@ -339,6 +463,7 @@ EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
         case 1: listeners[i].fn.call(listeners[i].context); break;
         case 2: listeners[i].fn.call(listeners[i].context, a1); break;
         case 3: listeners[i].fn.call(listeners[i].context, a1, a2); break;
+        case 4: listeners[i].fn.call(listeners[i].context, a1, a2, a3); break;
         default:
           if (!args) for (j = 1, args = new Array(len -1); j < len; j++) {
             args[j - 1] = arguments[j];
@@ -353,115 +478,118 @@ EventEmitter.prototype.emit = function emit(event, a1, a2, a3, a4, a5) {
 };
 
 /**
- * Register a new EventListener for the given event.
+ * Add a listener for a given event.
  *
- * @param {String} event Name of the event.
- * @param {Functon} fn Callback function.
- * @param {Mixed} context The context of the function.
+ * @param {String|Symbol} event The event name.
+ * @param {Function} fn The listener function.
+ * @param {Mixed} [context=this] The context to invoke the listener with.
+ * @returns {EventEmitter} `this`.
  * @api public
  */
 EventEmitter.prototype.on = function on(event, fn, context) {
   var listener = new EE(fn, context || this)
     , evt = prefix ? prefix + event : event;
 
-  if (!this._events) this._events = prefix ? {} : Object.create(null);
-  if (!this._events[evt]) this._events[evt] = listener;
-  else {
-    if (!this._events[evt].fn) this._events[evt].push(listener);
-    else this._events[evt] = [
-      this._events[evt], listener
-    ];
-  }
+  if (!this._events[evt]) this._events[evt] = listener, this._eventsCount++;
+  else if (!this._events[evt].fn) this._events[evt].push(listener);
+  else this._events[evt] = [this._events[evt], listener];
 
   return this;
 };
 
 /**
- * Add an EventListener that's only called once.
+ * Add a one-time listener for a given event.
  *
- * @param {String} event Name of the event.
- * @param {Function} fn Callback function.
- * @param {Mixed} context The context of the function.
+ * @param {String|Symbol} event The event name.
+ * @param {Function} fn The listener function.
+ * @param {Mixed} [context=this] The context to invoke the listener with.
+ * @returns {EventEmitter} `this`.
  * @api public
  */
 EventEmitter.prototype.once = function once(event, fn, context) {
   var listener = new EE(fn, context || this, true)
     , evt = prefix ? prefix + event : event;
 
-  if (!this._events) this._events = prefix ? {} : Object.create(null);
-  if (!this._events[evt]) this._events[evt] = listener;
-  else {
-    if (!this._events[evt].fn) this._events[evt].push(listener);
-    else this._events[evt] = [
-      this._events[evt], listener
-    ];
-  }
+  if (!this._events[evt]) this._events[evt] = listener, this._eventsCount++;
+  else if (!this._events[evt].fn) this._events[evt].push(listener);
+  else this._events[evt] = [this._events[evt], listener];
 
   return this;
 };
 
 /**
- * Remove event listeners.
+ * Remove the listeners of a given event.
  *
- * @param {String} event The event we want to remove.
- * @param {Function} fn The listener that we need to find.
- * @param {Mixed} context Only remove listeners matching this context.
- * @param {Boolean} once Only remove once listeners.
+ * @param {String|Symbol} event The event name.
+ * @param {Function} fn Only remove the listeners that match this function.
+ * @param {Mixed} context Only remove the listeners that have this context.
+ * @param {Boolean} once Only remove one-time listeners.
+ * @returns {EventEmitter} `this`.
  * @api public
  */
 EventEmitter.prototype.removeListener = function removeListener(event, fn, context, once) {
   var evt = prefix ? prefix + event : event;
 
-  if (!this._events || !this._events[evt]) return this;
-
-  var listeners = this._events[evt]
-    , events = [];
-
-  if (fn) {
-    if (listeners.fn) {
-      if (
-           listeners.fn !== fn
-        || (once && !listeners.once)
-        || (context && listeners.context !== context)
-      ) {
-        events.push(listeners);
-      }
-    } else {
-      for (var i = 0, length = listeners.length; i < length; i++) {
-        if (
-             listeners[i].fn !== fn
-          || (once && !listeners[i].once)
-          || (context && listeners[i].context !== context)
-        ) {
-          events.push(listeners[i]);
-        }
-      }
-    }
+  if (!this._events[evt]) return this;
+  if (!fn) {
+    if (--this._eventsCount === 0) this._events = new Events();
+    else delete this._events[evt];
+    return this;
   }
 
-  //
-  // Reset the array, or remove it completely if we have no more listeners.
-  //
-  if (events.length) {
-    this._events[evt] = events.length === 1 ? events[0] : events;
+  var listeners = this._events[evt];
+
+  if (listeners.fn) {
+    if (
+         listeners.fn === fn
+      && (!once || listeners.once)
+      && (!context || listeners.context === context)
+    ) {
+      if (--this._eventsCount === 0) this._events = new Events();
+      else delete this._events[evt];
+    }
   } else {
-    delete this._events[evt];
+    for (var i = 0, events = [], length = listeners.length; i < length; i++) {
+      if (
+           listeners[i].fn !== fn
+        || (once && !listeners[i].once)
+        || (context && listeners[i].context !== context)
+      ) {
+        events.push(listeners[i]);
+      }
+    }
+
+    //
+    // Reset the array, or remove it completely if we have no more listeners.
+    //
+    if (events.length) this._events[evt] = events.length === 1 ? events[0] : events;
+    else if (--this._eventsCount === 0) this._events = new Events();
+    else delete this._events[evt];
   }
 
   return this;
 };
 
 /**
- * Remove all listeners or only the listeners for the specified event.
+ * Remove all listeners, or those of the specified event.
  *
- * @param {String} event The event want to remove all listeners for.
+ * @param {String|Symbol} [event] The event name.
+ * @returns {EventEmitter} `this`.
  * @api public
  */
 EventEmitter.prototype.removeAllListeners = function removeAllListeners(event) {
-  if (!this._events) return this;
+  var evt;
 
-  if (event) delete this._events[prefix ? prefix + event : event];
-  else this._events = prefix ? {} : Object.create(null);
+  if (event) {
+    evt = prefix ? prefix + event : event;
+    if (this._events[evt]) {
+      if (--this._eventsCount === 0) this._events = new Events();
+      else delete this._events[evt];
+    }
+  } else {
+    this._events = new Events();
+    this._eventsCount = 0;
+  }
 
   return this;
 };
@@ -485,13 +613,192 @@ EventEmitter.prototype.setMaxListeners = function setMaxListeners() {
 EventEmitter.prefixed = prefix;
 
 //
+// Allow `EventEmitter` to be imported as module namespace.
+//
+EventEmitter.EventEmitter = EventEmitter;
+
+//
 // Expose the module.
 //
 if ('undefined' !== typeof module) {
   module.exports = EventEmitter;
 }
 
-},{}],3:[function(_dereq_,module,exports){
+},{}],5:[function(_dereq_,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _immutable = (typeof window !== "undefined" ? window.Immutable : typeof global !== "undefined" ? global.Immutable : null);
+
+var _utils = _dereq_('./utils');
+
+var Iterator = _immutable.Iterable.Iterator;
+
+var NOT_SET = {}; // Sentinel value
+
+function Base(rootData, keyPath, updater, deref, size) {
+  this.size = size;
+  this._rootData = rootData;
+  this._keyPath = keyPath;
+  this._updater = updater;
+  this._deref = deref;
+}
+
+Base.prototype = {
+  deref: function deref(notSetValue) {
+    return this._rootData.getIn(this._keyPath, notSetValue);
+  },
+
+
+  // Need test of noSetValue
+  valueOf: function valueOf(notSetValue) {
+    return this.deref.call(this, notSetValue);
+  },
+  get: function get(key, notSetValue) {
+    return this.getIn([key], notSetValue);
+  },
+  getIn: function getIn(keyPath, notSetValue) {
+    var constructKeyPath = (0, _utils.listToKeyPath)(keyPath);
+    if (constructKeyPath.length === 0) {
+      return this;
+    }
+    var value = this._rootData.getIn((0, _utils.newKeyPath)(this._keyPath, constructKeyPath), NOT_SET);
+    return value === NOT_SET ? notSetValue : (0, _utils.wrappedValue)(this, constructKeyPath, value);
+  },
+  set: function set(key, value) {
+    if (arguments.length === 1) {
+      return (0, _utils.updateCursor)(this, function () {
+        return key;
+      }, []);
+    }
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.set(key, value);
+    }, [key]);
+  },
+
+
+  setIn: _immutable.Map.prototype.setIn,
+
+  // Needs tests
+  remove: function remove(key) {
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.remove(key);
+    }, [key]);
+  },
+
+
+  // Needs tests
+  delete: function _delete(key) {
+    return this.remove.call(this, key);
+  },
+
+
+  deleteIn: _immutable.Map.prototype.deleteIn,
+
+  removeIn: _immutable.Map.prototype.deleteIn,
+
+  clear: function clear() {
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.clear();
+    });
+  },
+  update: function update(keyOrFn, notSetValue, updater) {
+    return arguments.length === 1 ? (0, _utils.updateCursor)(this, keyOrFn) : this.updateIn([keyOrFn], notSetValue, updater);
+  },
+  updateIn: function updateIn(keyPath, notSetValue, updater) {
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.updateIn(keyPath, notSetValue, updater);
+    }, keyPath);
+  },
+  merge: function merge() {
+    var _arguments = arguments;
+
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.merge.apply(m, _arguments);
+    });
+  },
+  mergeWith: function mergeWith() {
+    var _arguments2 = arguments;
+
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.mergeWith.apply(m, _arguments2);
+    });
+  },
+
+
+  mergeIn: _immutable.Map.prototype.mergeIn,
+
+  mergeDeep: function mergeDeep() {
+    var _arguments3 = arguments;
+
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.mergeDeep.apply(m, _arguments3);
+    });
+  },
+  mergeDeepWith: function mergeDeepWith() {
+    var _arguments4 = arguments;
+
+    return (0, _utils.updateCursor)(this, function (m) {
+      return m.mergeDeepWith.apply(m, _arguments4);
+    });
+  },
+
+
+  mergeDeepIn: _immutable.Map.prototype.mergeDeepIn,
+
+  withMutations: function withMutations(fn) {
+    return (0, _utils.updateCursor)(this, function (m) {
+      return (m || (0, _immutable.Map)()).withMutations(fn);
+    });
+  },
+  cursor: function cursor(path) {
+    var subKeyPath = (0, _utils.valToKeyPath)(path);
+    return subKeyPath.length === 0 ? this : (0, _utils.subCursor)(this, subKeyPath);
+  },
+  __iterate: function __iterate(fn, reverse) {
+    var cursor = this;
+    var deref = cursor.deref();
+    return deref && deref.__iterate ? deref.__iterate(function (v, k) {
+      return fn((0, _utils.wrappedValue)(cursor, [k], v), k, cursor);
+    }, reverse) : 0;
+  },
+  __iterator: function __iterator(type, reverse) {
+    var deref = this.deref();
+    var cursor = this;
+    var iterator = deref && deref.__iterator && deref.__iterator(Iterator.ENTRIES, reverse);
+    return new Iterator(function () {
+      if (!iterator) {
+        return { value: undefined, done: true };
+      }
+      var step = iterator.next();
+      if (step.done) {
+        return step;
+      }
+      var entry = step.value;
+      var k = entry[0];
+      var v = (0, _utils.wrappedValue)(cursor, [k], entry[1]);
+      return {
+        value: type === Iterator.KEYS ? k : type === Iterator.VALUES ? v : [k, v]
+      };
+    });
+  }
+};
+
+exports.default = Base;
+},{"./utils":9,"immutable":undefined}],6:[function(_dereq_,module,exports){
+'use strict';
+
+var _utils = _dereq_('./utils');
+
+var _atomStore = _dereq_('atom-store');
+
+var _atomStore2 = _interopRequireDefault(_atomStore);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 /**
  *  Copyright (c) 2014-2015, Facebook, Inc.
  *  All rights reserved.
@@ -501,258 +808,147 @@ if ('undefined' !== typeof module) {
  *  of patent rights can be found in the PATENTS file in the same directory.
  */
 
-/**
- * Cursor is expected to be required in a node or other CommonJS context:
- *
- *     var Cursor = require('immutable/contrib/cursor');
- *
- * If you wish to use it in the browser, please check out Browserify or WebPack!
- */
-
-var Immutable = (typeof window !== "undefined" ? window.Immutable : typeof global !== "undefined" ? global.Immutable : null);
-var Iterable = Immutable.Iterable;
-var Iterator = Iterable.Iterator;
-var Seq = Immutable.Seq;
-var Map = Immutable.Map;
-var Record = Immutable.Record;
-
-
-function cursorFrom(rootData, keyPath, onChange) {
+function cursorFrom(data, keyPath, onChange) {
+  var atom = (0, _atomStore2.default)(data);
   if (arguments.length === 1) {
     keyPath = [];
   } else if (typeof keyPath === 'function') {
     onChange = keyPath;
     keyPath = [];
   } else {
-    keyPath = valToKeyPath(keyPath);
+    keyPath = (0, _utils.valToKeyPath)(keyPath);
   }
-  return makeCursor(rootData, keyPath, onChange);
-}
 
-
-var KeyedCursorPrototype = Object.create(Seq.Keyed.prototype);
-var IndexedCursorPrototype = Object.create(Seq.Indexed.prototype);
-
-function KeyedCursor(rootData, keyPath, onChange, size) {
-  this.size = size;
-  this._rootData = rootData;
-  this._keyPath = keyPath;
-  this._onChange = onChange;
-}
-KeyedCursorPrototype.constructor = KeyedCursor;
-
-function IndexedCursor(rootData, keyPath, onChange, size) {
-  this.size = size;
-  this._rootData = rootData;
-  this._keyPath = keyPath;
-  this._onChange = onChange;
-}
-IndexedCursorPrototype.constructor = IndexedCursor;
-
-KeyedCursorPrototype.toString = function() {
-  return this.__toString('Cursor {', '}');
-}
-IndexedCursorPrototype.toString = function() {
-  return this.__toString('Cursor [', ']');
-}
-
-KeyedCursorPrototype.deref =
-KeyedCursorPrototype.valueOf =
-IndexedCursorPrototype.deref =
-IndexedCursorPrototype.valueOf = function(notSetValue) {
-  return this._rootData.getIn(this._keyPath, notSetValue);
-}
-
-KeyedCursorPrototype.get =
-IndexedCursorPrototype.get = function(key, notSetValue) {
-  return this.getIn([key], notSetValue);
-}
-
-KeyedCursorPrototype.getIn =
-IndexedCursorPrototype.getIn = function(keyPath, notSetValue) {
-  keyPath = listToKeyPath(keyPath);
-  if (keyPath.length === 0) {
-    return this;
+  if (typeof onChange !== 'undefined') {
+    atom.watch(onChange);
   }
-  var value = this._rootData.getIn(newKeyPath(this._keyPath, keyPath), NOT_SET);
-  return value === NOT_SET ? notSetValue : wrappedValue(this, keyPath, value);
+
+  return (0, _utils.makeCursor)(data, keyPath, atom.write.bind(atom), atom.read);
 }
 
-IndexedCursorPrototype.set =
-KeyedCursorPrototype.set = function(key, value) {
-  return updateCursor(this, function (m) { return m.set(key, value); }, [key]);
+exports.from = cursorFrom;
+},{"./utils":9,"atom-store":2}],7:[function(_dereq_,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _immutable = (typeof window !== "undefined" ? window.Immutable : typeof global !== "undefined" ? global.Immutable : null);
+
+var _base = _dereq_('./base');
+
+var _base2 = _interopRequireDefault(_base);
+
+var _utils = _dereq_('./utils');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function Indexed(rootData, keyPath, updater, deref, size) {
+  _base2.default.call(this, rootData, keyPath, updater, deref, size);
 }
 
-IndexedCursorPrototype.push = function(/* values */) {
-  var args = arguments;
-  return updateCursor(this, function (m) {
-    return m.push.apply(m, args);
+Indexed.prototype = Object.create(_immutable.Seq.Indexed.prototype);
+Object.assign(Indexed.prototype, _base2.default.prototype);
+
+Indexed.prototype.push = function () {
+  var _arguments = arguments;
+
+  return (0, _utils.updateCursor)(this, function (m) {
+    return m.push.apply(m, _arguments);
   });
-}
+};
 
-IndexedCursorPrototype.pop = function() {
-  return updateCursor(this, function (m) {
+Indexed.prototype.pop = function () {
+  return (0, _utils.updateCursor)(this, function (m) {
     return m.pop();
   });
-}
+};
 
-IndexedCursorPrototype.unshift = function(/* values */) {
-  var args = arguments;
-  return updateCursor(this, function (m) {
-    return m.unshift.apply(m, args);
+Indexed.prototype.unshift = function () {
+  var _arguments2 = arguments;
+
+  return (0, _utils.updateCursor)(this, function (m) {
+    return m.unshift.apply(m, _arguments2);
   });
-}
+};
 
-IndexedCursorPrototype.shift = function() {
-  return updateCursor(this, function (m) {
+Indexed.prototype.shift = function () {
+  return (0, _utils.updateCursor)(this, function (m) {
     return m.shift();
   });
+};
+
+Indexed.prototype.toString = function () {
+  return this.__toString('Cursor [', ']');
+};
+
+exports.default = Indexed;
+},{"./base":5,"./utils":9,"immutable":undefined}],8:[function(_dereq_,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _immutable = (typeof window !== "undefined" ? window.Immutable : typeof global !== "undefined" ? global.Immutable : null);
+
+var _base = _dereq_('./base');
+
+var _base2 = _interopRequireDefault(_base);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function Keyed(rootData, keyPath, updater, deref, size) {
+  _base2.default.call(this, rootData, keyPath, updater, deref, size);
 }
 
-IndexedCursorPrototype.setIn =
-KeyedCursorPrototype.setIn = Map.prototype.setIn;
+Keyed.prototype = Object.create(_immutable.Seq.Keyed.prototype);
+Object.assign(Keyed.prototype, _base2.default.prototype);
 
-KeyedCursorPrototype.remove =
-KeyedCursorPrototype['delete'] =
-IndexedCursorPrototype.remove =
-IndexedCursorPrototype['delete'] = function(key) {
-  return updateCursor(this, function (m) { return m.remove(key); }, [key]);
-}
+Keyed.prototype.toString = function () {
+  return this.__toString('Cursor {', '}');
+};
 
-IndexedCursorPrototype.removeIn =
-IndexedCursorPrototype.deleteIn =
-KeyedCursorPrototype.removeIn =
-KeyedCursorPrototype.deleteIn = Map.prototype.deleteIn;
+exports.default = Keyed;
+},{"./base":5,"immutable":undefined}],9:[function(_dereq_,module,exports){
+'use strict';
 
-KeyedCursorPrototype.clear =
-IndexedCursorPrototype.clear = function() {
-  return updateCursor(this, function (m) { return m.clear(); });
-}
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.defineRecordProperties = defineRecordProperties;
+exports.makeCursor = makeCursor;
+exports.listToKeyPath = listToKeyPath;
+exports.newKeyPath = newKeyPath;
+exports.valToKeyPath = valToKeyPath;
+exports.subCursor = subCursor;
+exports.updateCursor = updateCursor;
+exports.wrappedValue = wrappedValue;
 
-IndexedCursorPrototype.update =
-KeyedCursorPrototype.update = function(keyOrFn, notSetValue, updater) {
-  return arguments.length === 1 ?
-    updateCursor(this, keyOrFn) :
-    this.updateIn([keyOrFn], notSetValue, updater);
-}
+var _immutable = (typeof window !== "undefined" ? window.Immutable : typeof global !== "undefined" ? global.Immutable : null);
 
-IndexedCursorPrototype.updateIn =
-KeyedCursorPrototype.updateIn = function(keyPath, notSetValue, updater) {
-  return updateCursor(this, function (m) {
-    return m.updateIn(keyPath, notSetValue, updater);
-  }, keyPath);
-}
+var _keyed = _dereq_('./keyed');
 
-IndexedCursorPrototype.merge =
-KeyedCursorPrototype.merge = function(/*...iters*/) {
-  var args = arguments;
-  return updateCursor(this, function (m) {
-    return m.merge.apply(m, args);
-  });
-}
+var _keyed2 = _interopRequireDefault(_keyed);
 
-IndexedCursorPrototype.mergeWith =
-KeyedCursorPrototype.mergeWith = function(merger/*, ...iters*/) {
-  var args = arguments;
-  return updateCursor(this, function (m) {
-    return m.mergeWith.apply(m, args);
-  });
-}
+var _indexed = _dereq_('./indexed');
 
-IndexedCursorPrototype.mergeIn =
-KeyedCursorPrototype.mergeIn = Map.prototype.mergeIn;
+var _indexed2 = _interopRequireDefault(_indexed);
 
-IndexedCursorPrototype.mergeDeep =
-KeyedCursorPrototype.mergeDeep = function(/*...iters*/) {
-  var args = arguments;
-  return updateCursor(this, function (m) {
-    return m.mergeDeep.apply(m, args);
-  });
-}
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-IndexedCursorPrototype.mergeDeepWith =
-KeyedCursorPrototype.mergeDeepWith = function(merger/*, ...iters*/) {
-  var args = arguments;
-  return updateCursor(this, function (m) {
-    return m.mergeDeepWith.apply(m, args);
-  });
-}
-
-IndexedCursorPrototype.mergeDeepIn =
-KeyedCursorPrototype.mergeDeepIn = Map.prototype.mergeDeepIn;
-
-KeyedCursorPrototype.withMutations =
-IndexedCursorPrototype.withMutations = function(fn) {
-  return updateCursor(this, function (m) {
-    return (m || Map()).withMutations(fn);
-  });
-}
-
-KeyedCursorPrototype.cursor =
-IndexedCursorPrototype.cursor = function(subKeyPath) {
-  subKeyPath = valToKeyPath(subKeyPath);
-  return subKeyPath.length === 0 ? this : subCursor(this, subKeyPath);
-}
-
-/**
- * All iterables need to implement __iterate
- */
-KeyedCursorPrototype.__iterate =
-IndexedCursorPrototype.__iterate = function(fn, reverse) {
-  var cursor = this;
-  var deref = cursor.deref();
-  return deref && deref.__iterate ? deref.__iterate(
-    function (v, k) { return fn(wrappedValue(cursor, [k], v), k, cursor); },
-    reverse
-  ) : 0;
-}
-
-/**
- * All iterables need to implement __iterator
- */
-KeyedCursorPrototype.__iterator =
-IndexedCursorPrototype.__iterator = function(type, reverse) {
-  var deref = this.deref();
-  var cursor = this;
-  var iterator = deref && deref.__iterator &&
-    deref.__iterator(Iterator.ENTRIES, reverse);
-  return new Iterator(function () {
-    if (!iterator) {
-      return { value: undefined, done: true };
+function setProp(prototype, name) {
+  Object.defineProperty(prototype, name, {
+    get: function get() {
+      return this.get(name);
+    },
+    set: function set() {
+      if (!this.__ownerID) {
+        throw new Error('Cannot set on an immutable record.');
+      }
     }
-    var step = iterator.next();
-    if (step.done) {
-      return step;
-    }
-    var entry = step.value;
-    var k = entry[0];
-    var v = wrappedValue(cursor, [k], entry[1]);
-    return {
-      value: type === Iterator.KEYS ? k : type === Iterator.VALUES ? v : [k, v],
-      done: false
-    };
   });
-}
-
-KeyedCursor.prototype = KeyedCursorPrototype;
-IndexedCursor.prototype = IndexedCursorPrototype;
-
-
-var NOT_SET = {}; // Sentinel value
-
-function makeCursor(rootData, keyPath, onChange, value) {
-  if (arguments.length < 4) {
-    value = rootData.getIn(keyPath);
-  }
-  var size = value && value.size;
-  var CursorClass = Iterable.isIndexed(value) ? IndexedCursor : KeyedCursor;
-  var cursor = new CursorClass(rootData, keyPath, onChange, size);
-
-  if (value instanceof Record) {
-    defineRecordProperties(cursor, value);
-  }
-
-  return cursor;
 }
 
 function defineRecordProperties(cursor, value) {
@@ -763,81 +959,58 @@ function defineRecordProperties(cursor, value) {
   }
 }
 
-function setProp(prototype, name) {
-  Object.defineProperty(prototype, name, {
-    get: function() {
-      return this.get(name);
-    },
-    set: function(value) {
-      if (!this.__ownerID) {
-        throw new Error('Cannot set on an immutable record.');
-      }
-    }
-  });
-}
-
-function wrappedValue(cursor, keyPath, value) {
-  return Iterable.isIterable(value) ? subCursor(cursor, keyPath, value) : value;
-}
-
-function subCursor(cursor, keyPath, value) {
-  if (arguments.length < 3) {
-    return makeCursor( // call without value
-      cursor._rootData,
-      newKeyPath(cursor._keyPath, keyPath),
-      cursor._onChange
-    );
+function makeCursor(rootData, keyPath, updater, deref, value) {
+  if (arguments.length < 5) {
+    value = rootData.getIn(keyPath);
   }
-  return makeCursor(
-    cursor._rootData,
-    newKeyPath(cursor._keyPath, keyPath),
-    cursor._onChange,
-    value
-  );
+  var size = value && value.size;
+  var Cursor = _immutable.Iterable.isIndexed(value) ? _indexed2.default : _keyed2.default;
+  var cursor = new Cursor(rootData, keyPath, updater, deref, size);
+
+  if (value instanceof _immutable.Record) {
+    defineRecordProperties(cursor, value);
+  }
+
+  return cursor;
 }
 
-function updateCursor(cursor, changeFn, changeKeyPath) {
-  var deepChange = arguments.length > 2;
-  var newRootData = cursor._rootData.updateIn(
-    cursor._keyPath,
-    deepChange ? Map() : undefined,
-    changeFn
-  );
-  var keyPath = cursor._keyPath || [];
-  var result = cursor._onChange && cursor._onChange.call(
-    undefined,
-    newRootData,
-    cursor._rootData,
-    deepChange ? newKeyPath(keyPath, changeKeyPath) : keyPath
-  );
-  if (result !== undefined) {
-    newRootData = result;
-  }
-  return makeCursor(newRootData, cursor._keyPath, cursor._onChange);
+function listToKeyPath(list) {
+  return Array.isArray(list) ? list : (0, _immutable.Iterable)(list).toArray();
 }
 
 function newKeyPath(head, tail) {
   return head.concat(listToKeyPath(tail));
 }
 
-function listToKeyPath(list) {
-  return Array.isArray(list) ? list : Immutable.Iterable(list).toArray();
-}
-
 function valToKeyPath(val) {
-  return Array.isArray(val) ? val :
-    Iterable.isIterable(val) ? val.toArray() :
-    [val];
+  return Array.isArray(val) ? val : _immutable.Iterable.isIterable(val) ? val.toArray() : [val];
 }
 
-exports.from = cursorFrom;
+function subCursor(cursor, keyPath, value) {
+  if (arguments.length < 3) {
+    return makeCursor( // call without value
+    cursor._rootData, newKeyPath(cursor._keyPath, keyPath), cursor._updater, cursor._deref);
+  }
+  return makeCursor(cursor._rootData, newKeyPath(cursor._keyPath, keyPath), cursor._updater, cursor._deref, value);
+}
 
-},{"immutable":undefined}],4:[function(_dereq_,module,exports){
+function updateCursor(cursor, changeFn, keyPath) {
+  var deepChange = arguments.length > 2;
+  var updateFn = function updateFn(oldState) {
+    return oldState.updateIn(cursor._keyPath, deepChange ? (0, _immutable.Map)() : undefined, changeFn);
+  };
+  return makeCursor(cursor._updater(updateFn, newKeyPath(cursor._keyPath, keyPath)), cursor._keyPath, cursor._updater, cursor._deref);
+}
+
+function wrappedValue(cursor, keyPath, value) {
+  return _immutable.Iterable.isIterable(value) ? subCursor(cursor, keyPath, value) : value;
+}
+},{"./indexed":7,"./keyed":8,"immutable":undefined}],10:[function(_dereq_,module,exports){
 (function (global){
 'use strict';
 
 var Immutable = (typeof window !== "undefined" ? window['Immutable'] : typeof global !== "undefined" ? global['Immutable'] : null);
-var Cursor = _dereq_('immutable/contrib/cursor/index');
+var Cursor = _dereq_('immutable-cursor');
 var EventEmitter = _dereq_('eventemitter3');
 var utils = _dereq_('./utils');
 
@@ -857,7 +1030,7 @@ var LISTENER_SENTINEL = {};
  *
  * For instance:
  * ```js
- * var structure = new Structure({ 'foo': { 'bar': 'hello' } });
+ * var structure = new Structure({ 'data': { 'foo': { 'bar': 'hello' } } });
  *
  * structure.on('swap', function (newData, oldData, keyPath) {
  *   keyPath.should.eql(['foo', 'bar']);
@@ -872,7 +1045,7 @@ var LISTENER_SENTINEL = {};
  *
  * But for `change`
  * ```js
- * var structure = new Structure({ 'foo': { 'bar': 'hello' } });
+ * var structure = new Structure({ 'data': { 'foo': { 'bar': 'hello' } } });
  *
  * structure.on('change', function (newData, oldData, keyPath) {
  *   keyPath.should.eql(['foo', 'bar']);
@@ -921,19 +1094,19 @@ var LISTENER_SENTINEL = {};
  *
  * ```json
  * {
- *   key: String, // Defaults to random string
+ *   key: string, // Defaults to random string
  *   data: Object|Immutable, // defaults to empty Map
- *   history: Boolean, // Defaults to false
- *   historyLimit: Number, // If history enabled, Defaults to Infinity
+ *   history: boolean, // Defaults to false
+ *   historyLimit: number, // If history enabled, Defaults to Infinity
  * }
  * ```
  *
  * @property {Immutable.List} history `Immutable.List` with history.
  * @property {Object|Immutable} current Provided data as immutable data
- * @property {String} key Generated or provided key.
+ * @property {string} key Generated or provided key.
  *
  *
- * @param {{ key: String, data: Object, history: Boolean }} [options] - defaults
+ * @param {{ key: string, data: Object, history: boolean }} [options] - defaults
  *  to random key and empty data (immutable structure). No history
  *
  * @constructor
@@ -948,6 +1121,8 @@ function Structure (options) {
   if (!(this instanceof Structure)) {
     return new Structure(options);
   }
+
+  EventEmitter.call(this, arguments);
 
   this.key = options.key || utils.generateRandomKey();
 
@@ -971,8 +1146,6 @@ function Structure (options) {
     var args = [newData, oldData, keyPath];
     emit(self._referencelisteners, newData, oldData, keyPath, args);
   });
-
-  EventEmitter.call(this, arguments);
 }
 inherits(Structure, EventEmitter);
 module.exports = Structure;
@@ -1017,7 +1190,7 @@ function emit(map, newData, oldData, path, args) {
  *
  * See more examples in the [tests](https://github.com/omniscientjs/immstruct/blob/master/tests/structure_test.js)
  *
- * @param {String|Array} [path] - defaults to empty string. Can be array for path. See Immutable.js Cursors
+ * @param {string|Array.<string>} [path] - defaults to empty string. Can be array for path. See Immutable.js Cursors
  *
  * @api public
  * @module structure.cursor
@@ -1084,7 +1257,7 @@ Structure.prototype.cursor = function (path) {
  *
  * See more examples in the [readme](https://github.com/omniscientjs/immstruct)
  *
- * @param {String|Array|Cursor} [path|cursor] - defaults to empty string. Can be
+ * @param {string|Array.<string>|Cursor} [path|cursor] - defaults to empty string. Can be
  * array for path or use path of cursor. See Immutable.js Cursors
  *
  * @api public
@@ -1184,7 +1357,7 @@ Structure.prototype.reference = function reference (path) {
      *    New and old value are the changed value, not relative/scoped to the reference path as
      *    with `swap`.
      *
-     * @param {String} [eventName] - Type of change
+     * @param {string} [eventName] - Type of change
      * @param {Function} callback - Callback when referenced data is swapped
      *
      * @api public
@@ -1226,7 +1399,7 @@ Structure.prototype.reference = function reference (path) {
      *
      * See more examples in the [readme](https://github.com/omniscientjs/immstruct)
      *
-     * @param {String} [subpath] - Subpath to a deeper structure
+     * @param {string} [subpath] - Subpath to a deeper structure
      *
      * @api public
      * @module reference.cursor
@@ -1254,7 +1427,7 @@ Structure.prototype.reference = function reference (path) {
      *
      * See more examples in the [readme](https://github.com/omniscientjs/immstruct)
      *
-     * @param {String|Array} [path] - defaults to empty string. Can be array for path. See Immutable.js Cursors
+     * @param {string|Array.<string>} [path] - defaults to empty string. Can be array for path. See Immutable.js Cursors
      *
      * @api public
      * @see structure.reference
@@ -1315,7 +1488,7 @@ Structure.prototype.reference = function reference (path) {
  *
  * @param {Object} newData - Immutable object for the new data to emit
  * @param {Object} oldData - Immutable object for the old data to emit
- * @param {String} keyPath - Structure path (in tree) to where the changes occured.
+ * @param {string} keyPath - Structure path (in tree) to where the changes occured.
  *
  * @api public
  * @module structure.forceHasSwapped
@@ -1335,7 +1508,7 @@ Structure.prototype.forceHasSwapped = function (newData, oldData, keyPath) {
  *
  * Define number of steps to undo in param.
  *
- * @param {Number} steps - Number of steps to undo
+ * @param {number} steps - Number of steps to undo
  *
  * @api public
  * @module structure.undo
@@ -1356,7 +1529,7 @@ Structure.prototype.undo = function(steps) {
  * Define number of steps to redo in param.
  * **Will NOT emit swap when redo. You have to do this yourself**.
  *
- * @param {Number} head - Number of steps to head to in redo
+ * @param {number} head - Number of steps to head to in redo
  *
  * @api public
  * @module structure.redo
@@ -1425,8 +1598,8 @@ function handleHistory (emitter, fn) {
   };
 }
 
-var _requestAnimationFrame = (typeof window !== 'undefined' &&
-  window.requestAnimationFrame) || utils.raf;
+var _requestAnimationFrame = ((typeof window !== 'undefined' &&
+  window.requestAnimationFrame) || utils.raf).bind(window);
 
 // Update history if history is active
 function possiblyEmitAnimationFrameEvent (emitter, newStructure, oldData, keyPath) {
@@ -1568,7 +1741,7 @@ function inherits (c, p) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./utils":5,"eventemitter3":2,"immutable/contrib/cursor/index":3}],5:[function(_dereq_,module,exports){
+},{"./utils":11,"eventemitter3":4,"immutable-cursor":6}],11:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports.generateRandomKey = function (len) {

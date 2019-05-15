@@ -589,8 +589,8 @@ function handleHistory (emitter, fn) {
   };
 }
 
-var _requestAnimationFrame = (typeof window !== 'undefined' &&
-  window.requestAnimationFrame) || utils.raf;
+var _requestAnimationFrame = ((typeof window !== 'undefined' &&
+  window.requestAnimationFrame) || utils.raf).bind(window);
 
 // Update history if history is active
 function possiblyEmitAnimationFrameEvent (emitter, newStructure, oldData, keyPath) {
